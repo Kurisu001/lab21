@@ -1,2 +1,2 @@
-# NAME:
-# STUDENT ID:
+# NAME:นายกิตติพงศ์ ไชยายอง
+# STUDENT ID: 670612115
