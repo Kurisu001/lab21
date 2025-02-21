@@ -1,66 +1,139 @@
 #include <windows.h>
+#include <string>
+#include <sstream>
 
-/* This is where all the input to the window goes to */
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-	switch(Message) {
-		
-		/* Upon destruction, tell the main thread to stop */
-		case WM_DESTROY: {
-			PostQuitMessage(0);
-			break;
-		}
-		
-		/* All other messages (a lot of them) are processed using default procedures */
-		default:
-			return DefWindowProc(hwnd, Message, wParam, lParam);
-	}
-	return 0;
+// ประกาศฟังก์ชัน Window Procedure
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+char textA[100];
+char textB[100];
+HWND InA;
+HWND InB;
+HWND Plusbtn;
+HWND Minusbtn;
+HWND Multiplybtn;
+HWND Divbtn;
+long long a, b;
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    // 1. กำหนดคลาสหน้าต่าง
+    const char CLASS_NAME[] = "MyWindowClass";
+
+    WNDCLASS wc = {};
+    wc.lpfnWndProc = WindowProc; // กำหนดฟังก์ชันจัดการข้อความ
+    wc.hInstance = hInstance;
+    wc.lpszClassName = CLASS_NAME;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wc.hbrBackground = CreateSolidBrush(RGB(255, 55, 60));
+
+    RegisterClass(&wc);
+
+    // 2. สร้างหน้าต่างหลัก
+    HWND hwnd = CreateWindowEx(
+        0, CLASS_NAME, "Calculator", WS_CAPTION | WS_SYSMENU,
+        CW_USEDEFAULT, CW_USEDEFAULT, 250, 200,
+        NULL, NULL, hInstance, NULL);
+    Plusbtn = CreateWindow(
+        "BUTTON", "+", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        50 + 15, 130, 20, 20, hwnd, (HMENU)1, GetModuleHandle(NULL), NULL);
+    Minusbtn = CreateWindow(
+        "BUTTON", "-", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        80 + 15, 130, 20, 20, hwnd, (HMENU)2, GetModuleHandle(NULL), NULL);
+    Multiplybtn = CreateWindow(
+        "BUTTON", "*", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        110 + 15, 130, 20, 20, hwnd, (HMENU)3, GetModuleHandle(NULL), NULL);
+    Divbtn = CreateWindow(
+        "BUTTON", "/", WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        140 + 15, 130, 20, 20, hwnd, (HMENU)4, GetModuleHandle(NULL), NULL);
+    InA = CreateWindowEx(
+        0, "EDIT", "",
+        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
+        20, 50, 200, 25, hwnd, (HMENU)6, GetModuleHandle(NULL), NULL);
+    InB = CreateWindowEx(
+        0, "EDIT", "",
+        WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
+        20, 80, 200, 25, hwnd, (HMENU)7, GetModuleHandle(NULL), NULL);
+
+    if (hwnd == NULL)
+        return 0;
+
+    ShowWindow(hwnd, nCmdShow);
+    UpdateWindow(hwnd);
+
+    // 3. วนลูปรับข้อความ
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0))
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return 0;
 }
 
-/* The 'main' function of Win32 GUI programs: this is where execution starts */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	WNDCLASSEX wc; /* A properties struct of our window */
-	HWND hwnd; /* A 'HANDLE', hence the H, or a pointer to our window */
-	MSG msg; /* A temporary location for all messages */
-
-	/* zero out the struct and set the stuff we want to modify */
-	memset(&wc,0,sizeof(wc));
-	wc.cbSize	 = sizeof(WNDCLASSEX);
-	wc.lpfnWndProc	 = WndProc; /* This is where we will send messages to */
-	wc.hInstance	 = hInstance;
-	wc.hCursor	 = LoadCursor(NULL, IDC_ARROW);
-	
-	/* White, COLOR_WINDOW is just a #define for a system color, try Ctrl+Clicking it */
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-	wc.lpszClassName = "WindowClass";
-	wc.hIcon	 = LoadIcon(NULL, IDI_APPLICATION); /* Load a standard icon */
-	wc.hIconSm	 = LoadIcon(NULL, IDI_APPLICATION); /* use the name "A" to use the project icon */
-
-	if(!RegisterClassEx(&wc)) {
-		MessageBox(NULL, "Window Registration Failed!","Error!",MB_ICONEXCLAMATION|MB_OK);
-		return 0;
-	}
-
-	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE,"WindowClass","Caption",WS_VISIBLE|WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, /* x */
-		CW_USEDEFAULT, /* y */
-		640, /* width */
-		480, /* height */
-		NULL,NULL,hInstance,NULL);
-
-	if(hwnd == NULL) {
-		MessageBox(NULL, "Window Creation Failed!","Error!",MB_ICONEXCLAMATION|MB_OK);
-		return 0;
-	}
-
-	/*
-		This is the heart of our program where all input is processed and 
-		sent to WndProc. Note that GetMessage blocks code flow until it receives something, so
-		this loop will not produce unreasonably high CPU usage
-	*/
-	while(GetMessage(&msg, NULL, 0, 0) > 0) { /* If no error is received... */
-		TranslateMessage(&msg); /* Translate key codes to chars if present */
-		DispatchMessage(&msg); /* Send it to WndProc */
-	}
-	return msg.wParam;
+// 4. ฟังก์ชันจัดการข้อความของหน้าต่าง
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+    case WM_COMMAND:
+    {
+        switch (LOWORD(wParam))
+        {
+        case 1: // Plus button
+        case 2: // Minus button
+        case 3: // Multiply button
+        case 4: // Divide button
+        {
+            int gwtstat = GetWindowText(InA, textA, 100);
+            int gwtstat2 = GetWindowText(InB, textB, 100);
+            if (gwtstat > 0 && gwtstat2 > 0)
+            {
+                a = atoi(textA);
+                b = atoi(textB);
+                long long result = 0;
+                std::stringstream ss;
+                switch (LOWORD(wParam))
+                {
+                case 1:
+                    result = a + b;
+                    break;
+                case 2:
+                    result = a - b;
+                    break;
+                case 3:
+                    result = a * b;
+                    break;
+                case 4:
+                    if (b != 0)
+                        result = a / b;
+                    else
+                        MessageBox(hwnd, "Cannot divide by zero", "Error", MB_OK | MB_ICONERROR);
+                    break;
+                }
+                ss << result;
+                MessageBox(hwnd, ss.str().c_str(), "Result", MB_OK);
+            }
+            break;
+        }
+        }
+        break;
+    }
+    case WM_CLOSE:
+        DestroyWindow(hwnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+        TextOut(hdc, 85, 20, "Calculator", 10);
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+    }
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
